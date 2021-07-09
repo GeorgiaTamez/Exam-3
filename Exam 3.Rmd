@@ -1,0 +1,255 @@
+---
+title: "Exam 3"
+output:
+  word_document: default
+pdf_document: default
+---
+  
+  ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+**Question 1**
+  
+  Clear the environment
+
+```{r}
+#clear the environment
+rm(list=ls(all=TRUE)) 
+```
+
+** Question 2**
+  
+  Use the WDI package to download data on female labor force participation for all countries for the years 2010-2015. Save the data frame as female_lfp. (Hint: you may will need to Google the indicator.) 
+```{r}
+#load WDI package 
+library(WDI)
+
+#download data on FLFP for all countries (2010-2015)
+female_lfp = WDI (country = "all",
+                  indicator = c("SL.TLF.CACT.FE.ZS"), # indicator from web 
+                  start = 2010, end = 2015, extra = FALSE, cache = NULL)
+```
+
+** Question 3**
+  
+  Rename variable
+
+```{r}
+#rename female-lfp variable to flfp
+library(dplyr) 
+rename (female_lfp, flfp= SL.TLF.CACT.FE.ZS)
+
+#didn't work, try again 
+names(female_lfp)[3]= "flfp"
+
+#My console collapsed. check if it went through
+summary(female_lfp)
+```
+
+** Question 4**
+  
+Collapse female_lfp by the mean value for flfp for each country. When you do, keep the ISO-2 country code in your data frame as well as the country name. Name your resulting data frame collapsed_flfp. 
+
+```{r}
+
+#create new df with observable variables
+female_lfp_no_NAs <- na.omit(female_lfp, select=c("flfp"))
+
+#didn't work. im going to drop the ones that don't have any flfp
+rm(female_lfp_no_NAs)
+
+library (tidyverse)
+female_lfp_no_NAs <-
+  female_lfp %>% dplyr::filter(!(flfp=="NA"))
+subset(female_lfp, flfp=="NA")
+
+#mean of flfp
+mean(female_lfp_no_NAs$flfp)
+
+#collapse
+collapsed_flfp <-
+  female_lfp_no_NAs %>%
+  group_by(iso2c) %>%
+  summarize(flfp= mean(flfp), country)
+```
+
+** Question 6**
+  
+Use R to present a map of the world of using collapsed_flfp, using the viridis color scheme. Note: you have already the world border shape files from the training. However, there are a few different ways that you can present the map.
+
+```{r}
+
+#load libraries
+library(rio)
+library(tidyverse)
+library(dplyr)
+library(googlesheets4) 
+library(labelled) 
+library(data.table)
+library(varhandle) 
+library(ggrepel) 
+library(geosphere) 
+library(ggplot2)
+library(rgeos)
+library(viridis)
+library(mapview) 
+library(rnaturalearth) 
+library(rnaturalearthdata) 
+library(devtools)
+library(remotes)
+library(raster)
+library(sp) 
+library(Imap)
+library(sf)
+
+#load the shape file (the whole folder). Make sure the file is on the working directory
+world_borders <- st_read("world border shape files")
+
+#Any time we load a shape file, we need to ensure that it is in WGSformat
+borders <- st_transform(world_borders, "+proj=longlat +ellps=WGS84 +datum=WGS84")
+
+#create the map
+library(viridisLite) 
+
+#transform to sf format
+borders_sf = st_sf(borders)
+
+#map
+world_basic = ggplot() + 
+  geom_sf(data = borders) + 
+  geom_sf(data = collapsed_flfp)+ scale_fill_gradientn(colors=viridis)
+
+world_map = ggplot() + geom_sf(data = borders_sf) + 
+  geom_sf(data = collapsed_flfp, aes(color=flfp)) + scale_fill_gradientn(colors=viridis)
+
+
+```
+
+** Question 9**
+  
+  In a Shiny app, what are the three main components and their subcomponents? [5
+                                                                               points]
+
+1. Library: shiny
+2. User interface: input, output
+3. Server
+
+```{r}
+#Example
+
+# load the library
+library(shiny)
+
+# User Interface (UI) [an HTML page]
+ui <- fluidPage("Hello, World")
+
+# Input the server function
+# which functions on the basis of input & output 
+server <- function(input,output) {
+}
+
+```
+
+** Question 10**
+  
+  Pull this .pdf file from Mike Denly’s webpage. It is a report that Mike Denly and Mike Findley prepared for the US Agency for International Development (USAID). [5 points]
+
+```{r}
+#add pdftools so that we can pull from .pdf documents.
+#First be sure libraries all loaded 
+#install.packages('') 
+library(topicmodels)
+library(pdftools)
+library(tidyr) 
+library(tidytext) 
+library(dplyr) 
+library(stringr) 
+library(ggplot2)
+
+#load the file
+USAID_report=pdf_text(pdf = "https://pdf.usaid.gov/pdf_docs/PA00TNMJ.pdf") 
+
+```
+
+** Question 11**
+  
+Convert the text pulled from this .pdf file to a data frame, using the stringsAsFactors=FALSE option. Call the data frame armeniatext [5 points].
+
+- what i tried and failed
+armeniatext  = data.frame(USAID_report, stringsAsFactors = FALSE,
+armeniatext$page=(c(1:59))
+
+
+** Question 12**
+ 
+Tokenize the data by word and then remove stop words
+
+- what i tried and failed
+armeniatexttoken=armeniatext %>% 
+  unnest_tokens(word, text)
+
+
+ USAID_report_vector=as.vector(armeniatext[1])
+
+ armeniatexttokenized=USAID_report_vector %>% 
+  unnest_tokens(word, text)
+
+
+** Question 14**
+ 
+Load the Billboard Hot 100 webpage, which we explored in the course modules. Name
+the list object: hot100exam [5 points]
+
+```{r}
+#load libraries
+library(rvest)
+library (dplyr)
+library(XML)
+
+#use function read_html to capture the html code of the billboard
+hot100page= "https://www.billboard.com/charts/hot-100"
+hot100= read_html(hot100page)
+```
+
+** Question 15**
+ 
+Use rvest to obtain identify all of the nodes in the webpage. [5 points]
+
+```{r}
+#Use rvest to obtain the nodes of the webpage
+rank <- hot100 %>%
+  rvest::html_nodes('body') %>% 
+  xml2::xml_find_all("//span[contains(@class,
+'chart-element__rank__number')]") %>%
+rvest::html_text()
+
+artist <- hot100 %>% 
+  rvest::html_nodes('body') %>% 
+xml2::xml_find_all("//span[contains(@class,
+'chart-element__information__artist')]") %>%
+  rvest::html_text()
+
+title <- hot100 %>% 
+  rvest::html_nodes('body') %>% 
+xml2::xml_find_all("//span[contains(@class,
+'chart-element__information__song')]") %>%
+  rvest::html_text()
+```
+
+** Question 16**
+ 
+Use Google Chrome developer to identify the necessary tags and pull the data on Rank, Artist, Title, and Last Week. HINT 1: In class we showed you how to get the first three of these. You simply need to add the Last Week ranking. HINT 2: You can navigate two ways. Hovering to find what you need or by doing Cmd+F / Ctrl+F and using actual data to find the location. HINT 3: You’re looking to update the code based on the way the information is in referenced. Try out some different options and see what shows up in the environment. Keep trying until you see that you have a chr [1:100] with values that correspond to what is in the web page. [5 points]
+
+
+```{r}
+#Get weeks on charts- used method number 3
+weeks_on_charts <- hot100 %>% 
+  rvest::html_nodes('body') %>% 
+xml2::xml_find_all("//span[contains(@class,
+'chart-element__information__delta__text text--week')]") %>%
+  rvest::html_text()
+```
+
